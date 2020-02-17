@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include AUTHORS
+include ChangeLog
+include ytdm.bash-completion
+include ytdm.fish
+include ytdm.1
+recursive-include docs Makefile conf.py *.rst
+recursive-include test *
