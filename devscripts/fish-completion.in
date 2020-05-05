@@ -1,5 +1,0 @@
-
-{{commands}}
-
-
-complete --command ytdm --arguments ":ytfavorites :ytrecommended :ytsubscriptions :ytwatchlater :ythistory"
