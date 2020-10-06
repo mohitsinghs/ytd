@@ -47,10 +47,10 @@ index e7d8e8910305..5348e7dca740 100644
          '--add-metadata',
          action='store_true', dest='addmetadata', default=False,
 diff --git a/youtube_dl/postprocessor/embedthumbnail.py b/youtube_dl/postprocessor/embedthumbnail.py
-index 56be914b8f1b..fd2bc66f69fd 100644
+index 5a33595..299f51a 100644
 --- a/youtube_dl/postprocessor/embedthumbnail.py
 +++ b/youtube_dl/postprocessor/embedthumbnail.py
-@@ -22,9 +22,10 @@ class EmbedThumbnailPPError(PostProcessingError):
+@@ -23,9 +23,10 @@ class EmbedThumbnailPPError(PostProcessingError):
  
  
  class EmbedThumbnailPP(FFmpegPostProcessor):
@@ -62,15 +62,15 @@ index 56be914b8f1b..fd2bc66f69fd 100644
  
      def run(self, info):
          filename = info['filepath']
-@@ -42,8 +43,14 @@ def run(self, info):
-             return [], info
+@@ -75,8 +76,14 @@ class EmbedThumbnailPP(FFmpegPostProcessor):
+             thumbnail_filename = thumbnail_jpg_filename
  
          if info['ext'] == 'mp3':
 -            options = [
 -                '-c', 'copy', '-map', '0', '-map', '1',
 +            options = []
 +            if self._crop_thumbnail:
-+                options += [ '-c:a', 'copy', '-c:v', 'mjpeg', '-vf', 'crop=in_h' ]
++                options += ['-c:a', 'copy', '-c:v', 'mjpeg', '-vf', 'crop=in_h']
 +            else:
 +                options += ['-c', 'copy']  # Copy both streams instead
 +
@@ -80,10 +80,10 @@ index 56be914b8f1b..fd2bc66f69fd 100644
  
              self._downloader.to_screen('[ffmpeg] Adding thumbnail to "%s"' % filename)
 diff --git a/youtube_dl/extractor/extractors.py b/youtube_dl/extractor/extractors.py
-index 4b30920..d748d24 100644
+index ae7079a..86ed11f 100644
 --- a/youtube_dl/extractor/extractors.py
 +++ b/youtube_dl/extractor/extractors.py
-@@ -1,1478 +1,6 @@
+@@ -1,1477 +1,6 @@
  # flake8: noqa
  from __future__ import unicode_literals
  
@@ -1004,7 +1004,9 @@ index 4b30920..d748d24 100644
 -from .rds import RDSIE
 -from .redbulltv import (
 -    RedBullTVIE,
+-    RedBullEmbedIE,
 -    RedBullTVRrnContentIE,
+-    RedBullIE,
 -)
 -from .reddit import (
 -    RedditIE,
@@ -1315,14 +1317,11 @@ index 4b30920..d748d24 100644
 -from .twentythreevideo import TwentyThreeVideoIE
 -from .twitcasting import TwitCastingIE
 -from .twitch import (
--    TwitchVideoIE,
--    TwitchChapterIE,
 -    TwitchVodIE,
--    TwitchProfileIE,
--    TwitchAllVideosIE,
--    TwitchUploadsIE,
--    TwitchPastBroadcastsIE,
--    TwitchHighlightsIE,
+-    TwitchCollectionIE,
+-    TwitchVideosIE,
+-    TwitchVideosClipsIE,
+-    TwitchVideosCollectionsIE,
 -    TwitchStreamIE,
 -    TwitchClipsIE,
 -)
@@ -1562,7 +1561,7 @@ index 4b30920..d748d24 100644
  from .youtube import (
      YoutubeIE,
      YoutubeChannelIE,
-@@ -1492,27 +20,3 @@ from .youtube import (
+@@ -1491,27 +20,3 @@ from .youtube import (
      YoutubeUserIE,
      YoutubeWatchLaterIE,
  )
