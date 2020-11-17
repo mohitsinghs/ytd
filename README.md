@@ -5,8 +5,7 @@
 </p>
 
 <p align="center">
-  <b>85% smaller youtube-only version of youtube-dl</b><br/>
-  <sub>because youtube-dl is bloated with things other than youtube</sub>
+  <b>youtube-only version of youtube-dl</b><br/>
 </p>
 
 <br />
@@ -20,4 +19,3 @@ wget https://github.com/mohitsinghs/ytd/releases/latest/download/ytd
 chmod +x ytd
 sudo mv ytd /usr/local/bin
 ```
-
