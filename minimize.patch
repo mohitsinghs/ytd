@@ -80,7 +80,7 @@ index 5a33595..299f51a 100644
  
              self._downloader.to_screen('[ffmpeg] Adding thumbnail to "%s"' % filename)
 diff --git a/youtube_dl/extractor/extractors.py b/youtube_dl/extractor/extractors.py
-index ae7079a..86ed11f 100644
+index b2baf80..4cef629 100644
 --- a/youtube_dl/extractor/extractors.py
 +++ b/youtube_dl/extractor/extractors.py
 @@ -1,1477 +1,6 @@
@@ -615,6 +615,7 @@ index ae7079a..86ed11f 100644
 -    EHFTVIE,
 -    ITTFIE,
 -)
+-from .lbry import LBRYIE
 -from .lci import LCIIE
 -from .lcp import (
 -    LcpPlayIE,
@@ -1443,7 +1444,6 @@ index ae7079a..86ed11f 100644
 -from .vlive import (
 -    VLiveIE,
 -    VLiveChannelIE,
--    VLivePlaylistIE
 -)
 -from .vodlocker import VodlockerIE
 -from .vodpl import VODPlIE
@@ -1560,9 +1560,17 @@ index ae7079a..86ed11f 100644
 -from .yourupload import YourUploadIE
  from .youtube import (
      YoutubeIE,
-     YoutubeChannelIE,
-@@ -1491,27 +20,3 @@ from .youtube import (
-     YoutubeUserIE,
+     YoutubeHistoryIE,
+@@ -1481,34 +10,10 @@ from .youtube import (
+     YoutubeRecommendedIE,
+     YoutubeSearchDateIE,
+     YoutubeSearchIE,
+-    #YoutubeSearchURLIE,
++    # YoutubeSearchURLIE,
+     YoutubeSubscriptionsIE,
+     YoutubeTruncatedIDIE,
+     YoutubeTruncatedURLIE,
+     YoutubeYtUserIE,
      YoutubeWatchLaterIE,
  )
 -from .zapiks import ZapiksIE
