@@ -1,0 +1,158 @@
+diff --git a/youtube_dl/__init__.py b/youtube_dl/__init__.py
+index 9a659fc..a42286b 100644
+--- a/youtube_dl/__init__.py
++++ b/youtube_dl/__init__.py
+@@ -41,7 +41,6 @@ from .downloader import (
+     FileDownloader,
+ )
+ from .extractor import gen_extractors, list_extractors
+-from .extractor.adobepass import MSO_INFO
+ from .YoutubeDL import YoutubeDL
+
+
+@@ -119,10 +118,6 @@ def _real_main(argv=None):
+                 desc += ' (Example: "%s%s:%s" )' % (ie.SEARCH_KEY, random.choice(_COUNTS), random.choice(_SEARCHES))
+             write_string(desc + '\n', out=sys.stdout)
+         sys.exit(0)
+-    if opts.ap_list_mso:
+-        table = [[mso_id, mso_info['name']] for mso_id, mso_info in MSO_INFO.items()]
+-        write_string('Supported TV Providers:\n' + render_table(['mso', 'mso name'], table) + '\n', out=sys.stdout)
+-        sys.exit(0)
+
+     # Conflicting, missing and erroneous options
+     if opts.usenetrc and (opts.username is not None or opts.password is not None):
+@@ -289,7 +284,8 @@ def _real_main(argv=None):
+         already_have_thumbnail = opts.writethumbnail or opts.write_all_thumbnails
+         postprocessors.append({
+             'key': 'EmbedThumbnail',
+-            'already_have_thumbnail': already_have_thumbnail
++            'already_have_thumbnail': already_have_thumbnail,
++            'crop_thumbnail': opts.cropthumbnail,
+         })
+         if not already_have_thumbnail:
+             opts.writethumbnail = True
+diff --git a/youtube_dl/options.py b/youtube_dl/options.py
+index e7d8e8910305..5348e7dca740 100644
+--- a/youtube_dl/options.py
++++ b/youtube_dl/options.py
+@@ -814,6 +814,10 @@ def _comma_separated_values_options_callback(option, opt_str, value, parser):
+         '--embed-thumbnail',
+         action='store_true', dest='embedthumbnail', default=False,
+         help='Embed thumbnail in the audio as cover art')
++    postproc.add_option(
++        '--crop-thumbnail',
++        action='store_true', dest='cropthumbnail', default=False,
++        help='Crop the thumbnail to an square; No effect without --embed-thumbnail')
+     postproc.add_option(
+         '--add-metadata',
+         action='store_true', dest='addmetadata', default=False,
+diff --git a/youtube_dl/postprocessor/embedthumbnail.py b/youtube_dl/postprocessor/embedthumbnail.py
+index 5a33595..299f51a 100644
+--- a/youtube_dl/postprocessor/embedthumbnail.py
++++ b/youtube_dl/postprocessor/embedthumbnail.py
+@@ -23,9 +23,10 @@ class EmbedThumbnailPPError(PostProcessingError):
+ 
+ 
+ class EmbedThumbnailPP(FFmpegPostProcessor):
+-    def __init__(self, downloader=None, already_have_thumbnail=False):
++    def __init__(self, downloader=None, already_have_thumbnail=False, crop_thumbnail=False):
+         super(EmbedThumbnailPP, self).__init__(downloader)
+         self._already_have_thumbnail = already_have_thumbnail
++        self._crop_thumbnail = crop_thumbnail
+ 
+     def run(self, info):
+         filename = info['filepath']
+@@ -75,8 +76,14 @@ class EmbedThumbnailPP(FFmpegPostProcessor):
+             thumbnail_filename = thumbnail_jpg_filename
+ 
+         if info['ext'] == 'mp3':
+-            options = [
+-                '-c', 'copy', '-map', '0', '-map', '1',
++            options = []
++            if self._crop_thumbnail:
++                options += ['-c:a', 'copy', '-c:v', 'mjpeg', '-vf', 'crop=in_h']
++            else:
++                options += ['-c', 'copy']  # Copy both streams instead
++
++            options += [
++                '-map', '0', '-map', '1',
+                 '-metadata:s:v', 'title="Album cover"', '-metadata:s:v', 'comment="Cover (Front)"']
+ 
+             self._downloader.to_screen('[ffmpeg] Adding thumbnail to "%s"' % filename)
+diff --git a/youtube_dl/extractor/__init__.py b/youtube_dl/extractor/__init__.py
+index 18d8dbc..16623e5 100644
+--- a/youtube_dl/extractor/__init__.py
++++ b/youtube_dl/extractor/__init__.py
+@@ -3,6 +3,7 @@ from __future__ import unicode_literals
+ try:
+     from .lazy_extractors import *
+     from .lazy_extractors import _ALL_CLASSES
++
+     _LAZY_LOADER = True
+ except ImportError:
+     _LAZY_LOADER = False
+@@ -11,9 +12,8 @@ except ImportError:
+     _ALL_CLASSES = [
+         klass
+         for name, klass in globals().items()
+-        if name.endswith('IE') and name != 'GenericIE'
++        if name.endswith("IE") and name != "GenericIE"
+     ]
+-    _ALL_CLASSES.append(GenericIE)
+ 
+ 
+ def gen_extractor_classes():
+@@ -38,9 +38,10 @@ def list_extractors(age_limit):
+ 
+     return sorted(
+         filter(lambda ie: ie.is_suitable(age_limit), gen_extractors()),
+-        key=lambda ie: ie.IE_NAME.lower())
++        key=lambda ie: ie.IE_NAME.lower(),
++    )
+ 
+ 
+ def get_info_extractor(ie_name):
+     """Returns the info extractor class with the given ie_name"""
+-    return globals()[ie_name + 'IE']
++    return globals()[ie_name + "IE"]
+diff --git a/youtube_dl/YoutubeDL.py b/youtube_dl/YoutubeDL.py
+index 19370f6..4fa08a6 100755
+--- a/youtube_dl/YoutubeDL.py
++++ b/youtube_dl/YoutubeDL.py
+@@ -92,11 +92,9 @@ from .utils import (
+     YoutubeDLCookieJar,
+     YoutubeDLCookieProcessor,
+     YoutubeDLHandler,
+-    YoutubeDLRedirectHandler,
+ )
+ from .cache import Cache
+ from .extractor import get_info_extractor, gen_extractor_classes, _LAZY_LOADER
+-from .extractor.openload import PhantomJSwrapper
+ from .downloader import get_suitable_downloader
+ from .downloader.rtmp import rtmpdump_version
+ from .postprocessor import (
+@@ -2286,7 +2284,6 @@ class YoutubeDL(object):
+ 
+         exe_versions = FFmpegPostProcessor.get_versions(self)
+         exe_versions['rtmpdump'] = rtmpdump_version()
+-        exe_versions['phantomjs'] = PhantomJSwrapper._version()
+         exe_str = ', '.join(
+             '%s %s' % (exe, v)
+             for exe, v in sorted(exe_versions.items())
+@@ -2344,7 +2341,6 @@ class YoutubeDL(object):
+         debuglevel = 1 if self.params.get('debug_printtraffic') else 0
+         https_handler = make_HTTPS_handler(self.params, debuglevel=debuglevel)
+         ydlh = YoutubeDLHandler(self.params, debuglevel=debuglevel)
+-        redirect_handler = YoutubeDLRedirectHandler()
+         data_handler = compat_urllib_request_DataHandler()
+ 
+         # When passing our own FileHandler instance, build_opener won't add the
+@@ -2358,7 +2354,7 @@ class YoutubeDL(object):
+         file_handler.file_open = file_open
+ 
+         opener = compat_urllib_request.build_opener(
+-            proxy_handler, https_handler, cookie_processor, ydlh, redirect_handler, data_handler, file_handler)
++            proxy_handler, https_handler, cookie_processor, ydlh, data_handler, file_handler)
+ 
+         # Delete the default user-agent header, which would otherwise apply in
+         # cases where our custom HTTP handler doesn't come into play
