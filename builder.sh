@@ -1,6 +1,5 @@
 #/usr/bin/env bash
 git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git crap
-apply patches/minimize patch
 cd crap
 git apply "../patches/minimize.patch"
 cd youtube_dl/extractor
