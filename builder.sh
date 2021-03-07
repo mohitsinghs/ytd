@@ -14,3 +14,5 @@ make
 mv youtube-dl ../ytd
 cd ..
 rm -rf crap
+sudo install ytd /usr/local/bin
+rm ytd

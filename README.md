@@ -10,6 +10,4 @@
 
 ```sh
 ./builder.sh
-chmod +x ytd
-sudo mv ytd /usr/local/bin
 ```
