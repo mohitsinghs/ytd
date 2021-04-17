@@ -1,7 +1,10 @@
-#/usr/bin/env bash
-git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git crap
-cd crap
+#!/bin/bash
+# clone original youtube-dl
+git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git bloat
+cd bloat
+# apply our patch with tweaks
 git apply "../patches/minimize.patch"
+# do things that a small patch can't
 cd youtube_dl/extractor
 mkdir tmp
 mv __init__.py common.py commonmistakes.py commonprotocols.py youtube.py tmp
@@ -10,9 +13,11 @@ mv tmp/* .
 cp ../../../patches/extractors.py .
 rm -rf tmp
 cd ../..
+# build our version
 make
 mv youtube-dl ../ytd
 cd ..
-rm -rf crap
+rm -rf bloat
+## and install
 sudo install ytd /usr/local/bin
 rm ytd
